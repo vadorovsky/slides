@@ -1,0 +1,10 @@
+# Documents produced by pandoc
+*.pdf
+
+# Rust
+debug/
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
+*.skel.rs

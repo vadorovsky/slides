@@ -1,0 +1,26 @@
+[package]
+name = "aya-example-ebpf"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+aya-bpf = { git = "http://github.com/aya-rs/aya", branch = "main" }
+aya-example-common = { path = "../aya-example-common" }
+aya-log-ebpf = { git = "https://github.com/aya-rs/aya-log", branch = "main" }
+ufmt = "0.1"
+
+[[bin]]
+name = "aya-example"
+path = "src/main.rs"
+
+[profile.dev]
+panic = "abort"
+debug = 1
+opt-level = 2
+overflow-checks = false
+
+[profile.release]
+panic = "abort"
+
+[workspace]
+members = []

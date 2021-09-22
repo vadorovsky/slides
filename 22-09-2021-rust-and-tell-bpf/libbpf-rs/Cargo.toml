@@ -1,0 +1,10 @@
+[package]
+name = "fork-trace"
+version = "0.1.0"
+authors = ["Michal Rostecki <mrostecki@opennsuse.org>"]
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+ctrlc = "3.2"
+libbpf-rs = "0.12"
