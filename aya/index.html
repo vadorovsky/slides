@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aya</title>
+</head>
+
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <section data-markdown>
+        <textarea data-template>
+          ## Aya
+          Easy development of eBPF programs in Rust.
+          <img src="/images/crabby.svg" width="400" height="400" />
+          ---
+          ## About me
+          * Michal Rostecki
+          * vadorovsky @ Github, Discord, Matrix etc.
+          * Software Engineer @ Deepfence Inc
+          * Rustacean with Go, C and Python background
+          ---
+          ## What is eBPF?
+          * Technology which runs sandboxed programs in an operating system kernel.
+          * Event-driven, triggered by events in the kernel, receiving pointers to kernel or userspace memory.
+          * No need to modify kernel code or load kernel modules. eBPF programs can be just loaded and run.
+          ---
+          TODO: fix colors
+          <img src="/images/ebpf.png" height="600" />
+          ---
+          ## What events?
+          * kernel function calls
+            * or [tracepoints](https://docs.kernel.org/trace/tracepoints.html)
+          * userspace function calls
+          * network packets
+          * messages on sockets
+          * actions which trigger [LSM hooks](https://en.wikipedia.org/wiki/Linux_Security_Modules)
+            * filesystem operations
+            * allocating and freeing processes
+            * changing the user identity
+          ---
+          # BPF maps
+          * Storage for sharing data between eBPF programs (in kernel) and userspace.
+          * Different types:
+            * hash maps
+            * arrays
+            * perf buffers (buffers for pushing events to userspace)
+          * Can be available in BPFFS (`/sys/fs/bpf`)
+          ---
+          <img src="/images/bpf_map.png" height="400" />
+          ---
+          ## Lifetime of a BPF program
+          ---
+          ## Examples of BPF projects
+          ---
+          ## Mention kernel versions and differences
+          ---
+          ## eBPF project layout
+          * **userspace program**: loading eBPF programs to the kernel
+          * **eBPF programs**: running in the kernel and reacting to events
+          ---
+          ## "Official" ways to use eBPF
+          * **bpftrace**: very easy, own scripting language
+          * **libbpf**: umm... not easy at all (everything in C)
+          * **libbpf-rs**: easier (eBPF programs in C, userspace program in Rust)
+          * **bcc**: easier (eBPF programs in C,)
+          ---
+          ## What's so hard about libbpf?
+          * Everything written in C.
+          * Official docs are limited. Fragmented information in multiple websites and blogs.
+          * Necessity to create custom Makefile, write boilerplate code.
+          * There is a [bootstrap repo](https://github.com/libbpf/libbpf-bootstrap), but it requires a lot of manual tweaking.
+          * No logging. You can use `bpf_printk`, but you shouldn't. Logging is usually implemented from scratch in each project.
+          ---
+          ## Why Aya?
+          * Everything in Rust, also eBPF programs!
+          * rustup, rustc and cargo is all you need. No additional libs or tools.
+          * One central [book/documentation](https://aya-rs.github.io/book/).
+          * [Template](https://github.com/aya-rs/aya-template) ready to use with `cargo generate`.
+          ---
+          ## Why Rust?
+          * Using language features like `Result`, `Option`.
+          * Static linking and portable binaries.
+          * You can keep both eBPF and userspace part in one language.
+            * And share the structures.
+          ---
+          ## Memory safety?
+          * Actually... Rust memory model doesn't matter that much on eBPF part.
+          * eBPF has access to kernel and userspace memory via pointers, which are unsafe.
+          * Memory safety relies more on the eBPF verifier in the kernel rather than Rust compiler.
+          ---
+          ## How to start with Aya?
+          ```bash
+          rustup toolchain install nightly --component rust-src
+          cargo install bpf-linker
+          cargo install cargo-generate
+          ```
+          ---
+          ## Starting a new project
+          ```bash
+          cargo generate https://github.com/aya-rs/aya-template
+          ```
+          ---
+          ## Running the project
+          ```bash
+          cargo xtask run
+          ```
+          Only building:
+          ```bash
+          cargo xtask build-ebpf
+          cargo build
+          ```
+          ---
+          <img src="/images/talk_is_cheap.jpg" />
+          ---
+          ## Thank you
+          * [Documentation](https://aya-rs.github.io/book/)
+          * [Github](https://github.com/aya-rs/aya)
+          * [Discord](https://discord.gg/xHW2cb2N6G)
+        </textarea>
+      </section>
+    </div>
+  </div>
+  <script type="module" src="/main.js"></script>
+</body>
+
+</html>
