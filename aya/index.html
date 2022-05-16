@@ -28,7 +28,6 @@
           * Event-driven, triggered by events in the kernel, receiving pointers to kernel or userspace memory.
           * No need to modify kernel code or load kernel modules. eBPF programs can be just loaded and run.
           ---
-          TODO: fix colors
           <img src="/images/ebpf.png" height="600" />
           ---
           ## What events?
@@ -42,7 +41,17 @@
             * allocating and freeing processes
             * changing the user identity
           ---
-          # BPF maps
+          ## BPF program types
+          * For each type of events there is a separate type of program.
+          * Examples:
+            * **KProbe** (or **FEntry**) - for kernel function tracing
+            * **UProbe** - for userspace function tracing
+            * **Classifier** - for network packet inspection (sk_buff)
+            * **XDP** - for network packet inspection (raw packet on NIC)
+            * **LSM** - for security policies
+          * Each type has its own requirement of kernel version.
+          ---
+          ## BPF maps
           * Storage for sharing data between eBPF programs (in kernel) and userspace.
           * Different types:
             * hash maps
@@ -53,10 +62,17 @@
           <img src="/images/bpf_map.png" height="400" />
           ---
           ## Lifetime of a BPF program
+          * BPF programs have **links** - they are attached to events.
+          * By default, links are dropped when the `Bpf` object in the userspace project is dropped.
+          * You can detach the links earlier if you want.
+          * TODO: support link persistence by pinning in BPFFS (it's possible in libbpf)
           ---
           ## Examples of BPF projects
+          * Cilium - CNI plugin, Kubernetes networking, service mesh
+          * Katran - L4 load balancer
+          * Tracee - application tracing tool
+          * Falco - security monitoring for containers
           ---
-          ## Mention kernel versions and differences
           ---
           ## eBPF project layout
           * **userspace program**: loading eBPF programs to the kernel
