@@ -13,11 +13,12 @@
     <div class="slides">
       <section data-markdown>
         <textarea data-template>
+          ## Containing the containers that do not contain
           <img src="/images/lockc.svg" height="300" />
           ---
           ## About me
           * Michal Rostecki
-          * vadorovsky @ Github, Discord, Matrix etc.
+          * vadorovsky @ Github, Discord, Matrix, Slack etc.
           * Software Engineer @ Deepfence Inc
           * Rust, Go, C, Python
           ---
@@ -41,13 +42,6 @@
           * Since Linux 5.7, LSM can be used in eBPF programs.
           * No need for loading modules or modifying kernel code.
           ---
-          ## Container security again...
-          * Good practices which are not enforced:
-            * Not running as root.
-            * Not allowing to execute random binaries.
-          * Containers leak information about the host:
-            * `/sys/fs` is not namespaced.
-          ---
           ## lockc
           * Uses eBPF LSM to harden containers.
           * Written in Rust, using [Aya](https://github.com/aya-rs/aya).
@@ -55,7 +49,15 @@
           * For now - predefined policies, inspired by Pod Security Admission Controller.
           * Proof of concept, not meant for production.
           ---
+          ## What's enforced now?
+          * Bind mounts
+          * What files can be accessed (i.e. `/sys/fs` is hidden)
+          * Access to kernel syslog
+          * User ID
+          ---
           ## Future
+          * Allowing to execute only specific binaries (CMD/ENTRYPOINT + few essentials).
+          * Make the most of container FS read-only, guarantee immutability of binaries.
           * Supporting more runtimes (youki, crun), engines (Docker, nerdctl), CRI (cri-o).
           * eBPF LSM attached to cgroups.
           * Custom policies? Providing a policy language?
