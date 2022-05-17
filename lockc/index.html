@@ -24,7 +24,7 @@
           ---
           ## Container security
           * Kubernetes security is showing great progress...
-          * ...though it's done mostly on API and image level.
+          * ...though it's done mostly on API and image scanning level.
           * But what about container runtimes and kernel?
           ---
           ## eBPF
@@ -40,7 +40,8 @@
           ---
           ## eBPF LSM
           * Since Linux 5.7, LSM can be used in eBPF programs.
-          * No need for loading modules or modifying kernel code.
+          * No need for loading modules or modifying kernel code!
+          * You can write your userspace control plane interacting with LSM subsystem.
           ---
           ## lockc
           * Uses eBPF LSM to harden containers.
@@ -48,6 +49,14 @@
           * Detects runc processes, then tracks their children, enforcing policies on them.
           * For now - predefined policies, inspired by Pod Security Admission Controller.
           * Proof of concept, not meant for production.
+          ---
+          ## How that works?
+          * lockc userpsace agent monitors every new `runc` process.
+          * It's aware what's running the container (Kubernetes or Docker), a
+            policy level is applied based on that.
+          * Container ID, runc PID and policy level are saved in BPF maps.
+          * BPF program is tracking all the children scheduled inside container.
+          * Other BPF programs are enforcing policies on all those processes.
           ---
           ## What's enforced now?
           * Bind mounts
