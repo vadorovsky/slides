@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lockc</title>
+</head>
+
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <section data-markdown>
+        <textarea data-template>
+          <img src="/images/lockc.svg" height="300" />
+          ---
+          ## About me
+          * Michal Rostecki
+          * vadorovsky @ Github, Discord, Matrix etc.
+          * Software Engineer @ Deepfence Inc
+          * Rustacean with Go, C and Python background
+          ---
+          ## Container security
+          * Kubernetes security is showing great progress...
+          * ...though it's done mostly on API level.
+          * But what about container runtimes and kernel?
+          ---
+          ## eBPF
+          * Technology which runs sandboxed programs in the OS kernel.
+          * It's widely used for observability and detecting malicious behavior.
+          * But what about preventing it?
+          ---
+          ## Linux Security Modules (LSM)
+          * Framework in the Linux kernel, a basis for security systems (SELinux, Apparmor).
+          * Consists of various hooks for actions which have security considerations.
+          * Developers can use those hooks to make decisions (whether the action is allowed).
+          * Usually used in kernel modules, but...
+          ---
+          ## eBPF LSM
+          * Since Linux 5.7, LSM can be used in eBPF programs.
+          * No need for loading modules or modifying kernel code.
+          ---
+          ## Container security again...
+          * Good practices which are not enforced:
+            * Not running as root.
+            * Not allowing to execute random binaries.
+          * Containers leak information about the host:
+            * `/sys/fs` is not namespaced.
+          ---
+          ## lockc
+          * Uses eBPF LSM to harden containers.
+          * Written in Rust, using [Aya](https://github.com/aya-rs/aya).
+          * Detects runc processes, then tracks their children, enforcing policies on them.
+          * For now - predefined policies, inspired by Pod Security Admission Controller.
+          * Proof of concept, not meant for production.
+          ---
+          ## Future
+          * Supporting more runtimes (youki, crun) and engines (cri-o).
+          * eBPF LSM attached to cgroups.
+          * Custom policies? Providing a policy language?
+        </textarea>
+      </section>
+    </div>
+  </div>
+  <script type="module" src="/main.js"></script>
+</body>
+
+</html>
