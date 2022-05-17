@@ -19,16 +19,16 @@
           * Michal Rostecki
           * vadorovsky @ Github, Discord, Matrix etc.
           * Software Engineer @ Deepfence Inc
-          * Rustacean with Go, C and Python background
+          * Rust, Go, C, Python
           ---
           ## Container security
           * Kubernetes security is showing great progress...
-          * ...though it's done mostly on API level.
+          * ...though it's done mostly on API and image level.
           * But what about container runtimes and kernel?
           ---
           ## eBPF
-          * Technology which runs sandboxed programs in the OS kernel.
-          * It's widely used for observability and detecting malicious behavior.
+          * Technology which runs sandboxed programs in the OS kernel, event-driven.
+          * It's widely used for observability (system events, network) and detecting malicious behavior.
           * But what about preventing it?
           ---
           ## Linux Security Modules (LSM)
@@ -56,7 +56,7 @@
           * Proof of concept, not meant for production.
           ---
           ## Future
-          * Supporting more runtimes (youki, crun) and engines (cri-o).
+          * Supporting more runtimes (youki, crun), engines (Docker, nerdctl), CRI (cri-o).
           * eBPF LSM attached to cgroups.
           * Custom policies? Providing a policy language?
           ---
