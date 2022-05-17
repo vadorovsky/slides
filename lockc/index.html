@@ -64,6 +64,21 @@
           * Access to kernel syslog
           * User ID
           ---
+          ## Choosing policy level (on k8s namespace)
+          ```yaml
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: my-privileged-namespace
+            labels:
+              pod-security.kubernetes.io/enforce: privileged
+              pod-security.kubernetes.io/enforce-version: v1.22
+              pod-security.kubernetes.io/audit: privileged
+              pod-security.kubernetes.io/audit-version: v1.22
+              pod-security.kubernetes.io/warn: privileged
+              pod-security.kubernetes-io/warn-version: v1.22
+          ```
+          ---
           ## Future
           * Allowing to execute only specific binaries (CMD/ENTRYPOINT + few essentials).
           * Make the most of container FS read-only, guarantee immutability of binaries.
