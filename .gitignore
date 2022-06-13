@@ -1,6 +1,3 @@
-# Documents produced by pandoc
-*.pdf
-
 # Rust
 debug/
 target/
