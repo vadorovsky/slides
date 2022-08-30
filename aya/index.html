@@ -24,55 +24,56 @@
           * Rustacean with Go, C and Python background
           ---
           ## What is eBPF?
-          * Technology which runs sandboxed programs in an operating system kernel.
-          * Event-driven, triggered by events in the kernel, receiving pointers to kernel or userspace memory.
-          * No need to modify kernel code or load kernel modules. eBPF programs can be just loaded and run.
+          TECHNOLOGY OF THE FUTURE WHICH WILL REPLACE IPTABLES ANY DAY
+          <br />
+          <img src="/images/girl_explaining.jpg" height="400" />
           ---
-          <img src="/images/ebpf.png" height="600" />
+          ## What is eBPF?
+          * **extended Berkeley Packet Filter**
+          * A virtual machine with its own instruction set which runs sandboxed programs.
+          * Not Turing complete.
+          * Originated in the Linux kernel.
+          ---
+          ## Event-driven
+          * Triggered by events in the kernel.
+          * Receiving pointers to kernel or userspace memory.
           ---
           ## What events?
-          * kernel function calls
-            * or [tracepoints](https://docs.kernel.org/trace/tracepoints.html)
-          * userspace function calls
-          * network packets
-          * messages on sockets
-          * actions which trigger [LSM hooks](https://en.wikipedia.org/wiki/Linux_Security_Modules)
-            * filesystem operations
-            * allocating and freeing processes
-            * changing the user identity
           ---
-          ## BPF program types
-          * For each type of events there is a separate type of program.
-          * Examples:
-            * **KProbe** (or **FEntry**) - for kernel function tracing
-            * **UProbe** - for userspace function tracing
-            * **Classifier** - for network packet inspection (sk_buff)
-            * **XDP** - for network packet inspection (raw packet on NIC)
-            * **LSM** - for security policies
-          * Each type has its own requirement of kernel version.
+          ## Network traffic
+          * **XDP** - ingress trafic on NIC driver
+          * **Classifier** - both directions, attached to qdisc
+          ---
+          ## Function calls
+          * **Kprobes** - kernel functions
+          * **Uprobes** - userspace functions
+          ---
+          ## Security-related actions
+          * **LSM** hooks
+          ---
+          ## And many many more...
+          ---
+          <img src="/images/ebpf.png" height="600" />
           ---
           ## BPF maps
           * Storage for sharing data between eBPF programs (in kernel) and userspace.
           * Different types:
             * hash maps
             * arrays
-            * perf buffers (buffers for pushing events to userspace)
-          * Can be available in BPFFS (`/sys/fs/bpf`)
+            * perf buffers
           ---
           <img src="/images/bpf_map.png" height="400" />
           ---
-          ## Lifetime of a BPF program
-          * BPF programs have **links** - they are attached to events.
-          * By default, links are dropped when the `Bpf` object in the userspace project is dropped.
-          * You can detach the links earlier if you want.
-          * TODO: support link persistence by pinning in BPFFS (it's possible in libbpf)
+          ## Examples of eBPF projects
+          * **Cilium** - Kubernetes networking, service mesh
+          * **Tracee** - application tracing tool
+          * **Falco** - security monitoring for containers
+          (those are in Go in C)
           ---
-          ## Examples of BPF projects
-          * Cilium - CNI plugin, Kubernetes networking, service mesh
-          * Katran - L4 load balancer
-          * Tracee - application tracing tool
-          * Falco - security monitoring for containers
-          ---
+          ## Examples of eBPF projects using Aya
+          * **bpfd** - daemon managing eBPF programs
+          * **Parca** - continuous profiling
+          * **Pulsar** - runtime observability tool for IoT
           ---
           ## eBPF project layout
           * **userspace program**: loading eBPF programs to the kernel
@@ -82,31 +83,129 @@
           * **bpftrace**: very easy, own scripting language
           * **libbpf**: umm... not easy at all (everything in C)
           * **libbpf-rs**: easier (eBPF programs in C, userspace program in Rust)
-          * **bcc**: easier (eBPF programs in C,)
-          ---
-          ## What's so hard about libbpf?
-          * Everything written in C.
-          * Official docs are limited. Fragmented information in multiple websites and blogs.
-          * Necessity to create custom Makefile, write boilerplate code.
-          * There is a [bootstrap repo](https://github.com/libbpf/libbpf-bootstrap), but it requires a lot of manual tweaking.
-          * No logging. You can use `bpf_printk`, but you shouldn't. Logging is usually implemented from scratch in each project.
+          * **bcc**: easier (eBPF programs in C, userspace in many languages)
           ---
           ## Why Aya?
-          * Everything in Rust, also eBPF programs!
-          * rustup, rustc and cargo is all you need. No additional libs or tools.
-          * One central [book/documentation](https://aya-rs.github.io/book/).
-          * [Template](https://github.com/aya-rs/aya-template) ready to use with `cargo generate`.
           ---
-          ## Why Rust?
-          * Using language features like `Result`, `Option`.
-          * Static linking and portable binaries.
-          * You can keep both eBPF and userspace part in one language.
-            * And share the structures.
+          ## C and type safety
+          ```c
+          SEC("xdp")
+          int incorrect_xdp(struct __sk_buff *skb) {
+              return XDP_PASS;
+          }
+          ```
+          We made a mistake! We should have used
+          ```
+          struct xdp_md *ctx
+          ```
+          instead of
+          ```
+          struct __sk_buff *skb
+          ```
+          ---
+          ```bash
+          $ clang -O2 -emit-llvm -c incorrect_xdp.c -o - | llc -march=bpf -filetype=obj -o bpf.o
+          $
+          ```
+          But it compiles anyway, huh.
+          ---
+          ## Rust and type safety
+          ```rust
+          #[xdp(name = "incorrect_xdp")]
+          pub fn incorrect_xdp(ctx: SkBuffContext) -> u32 {
+              xdp_action::XDP_PASS
+          }
+          ```
+          ---
+          ```
+          $ cargo xtask build-ebpf
+          [...]
+          error[E0308]: mismatched types
+           --> src/main.rs:7:1
+            |
+          7 | #[xdp(name = "incorrect_xdp")]
+            | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected struct `SkBuffContext`, found struct `XdpContext`
+          8 | pub fn incorrect_xdp(ctx: SkBuffContext) -> u32 {
+          [...]
+          ```
+          It does not compile, nice.
           ---
           ## Memory safety?
-          * Actually... Rust memory model doesn't matter that much on eBPF part.
+          * Actually... Rust memory model doesn't matter that much in eBPF part.
           * eBPF has access to kernel and userspace memory via pointers, which are unsafe.
           * Memory safety relies more on the eBPF verifier in the kernel rather than Rust compiler.
+          ---
+          ## Error handling in C
+          ```c
+          struct {
+          	__uint(type, BPF_MAP_TYPE_HASH);
+          	__uint(max_entries, 1024);
+          	__type(key, pid_t);
+          	__type(value, u32);
+          } pids SEC(".maps");
+          ```
+
+          ```c
+          SEC("fentry/kernel_clone")
+          int BPF_PROG(kernel_clone, struct kernel_clone_args *args)
+          {
+          	/* Get the pid */
+          	pid_t pid = bpf_get_current_pid_tgid() >> 32;
+          	/* Save the pid in map */
+          	u32 val = 0;
+          	int err = bpf_map_update_elem(&pids, &pid, &val, 0);
+          	if (err < 0)
+          		return err;
+          	return 0;
+          }
+          ```
+          ---
+          ## Error handling in Rust
+          ```rust
+          #[map(name = "pids")]
+          static mut PIDS: HashMap<u32, u32> = HashMap::<u32, u32>::with_max_entries(1024, 0);
+          ```
+
+          ```rust
+          #[fentry(name = "kernel_clone")]
+          pub fn kernel_clone(ctx: FEntryContext) -> u32 {
+              match unsafe { try_kernel_clone(ctx) } {
+                  Ok(ret) => ret,
+                  Err(_) => 1,
+              }
+          }
+
+          fn try_kernel_clone(ctx: FEntryContext) -> Result<u32, c_long> {
+              // Get the pid
+              let pid = ctx.pid();
+              // Save the pid in map.
+              unsafe { PIDS.insert(&pid, &0, 0)? };
+              Ok(0)
+          }
+          ```
+          ---
+          ## Rust toolchain is all you need
+          * No need for LLVM and clang installation...
+          * ...as long as you're on x86_64
+          ---
+          ## aya-log
+          Logging library, based on perf buffers, production-ready.
+
+          ```rust
+          #[fentry(name = "kernel_clone")]
+          pub fn kernel_clone(ctx: FEntryContext) -> u32 {
+              let pid = ctx.pid();
+              info!(&ctx, "new process: pid: {}", pid);
+              0
+          }
+          ```
+          ---
+          <img src="/images/aya-log.png" />
+          ---
+          ## Async support
+          * Userspace part of projects can be asynchronous.
+          * Support for Tokio and async-std.
+          * aya-template by default uses Tokio.
           ---
           ## How to start with Aya?
           ```bash
@@ -115,10 +214,17 @@
           cargo install cargo-generate
           ```
           ---
-          ## Starting a new project
+          ## aya-template
+          Creating a new project:
           ```bash
+          cargo install cargo-generate
           cargo generate https://github.com/aya-rs/aya-template
           ```
+          ---
+          <img src="/images/cargo-generate-asks-questions.png" height="400" />
+          ---
+          ## Project layout
+          <img src="/images/project-layout.png" height="400" />
           ---
           ## Running the project
           ```bash
@@ -130,7 +236,7 @@
           cargo build
           ```
           ---
-          <img src="/images/talk_is_cheap.jpg" />
+          ## Let's write a simple firewall!
           ---
           ## Thank you
           * [Documentation](https://aya-rs.github.io/book/)
