@@ -19,19 +19,20 @@
           ---
           ## About me
           * Michal Rostecki
-          * vadorovsky @ Github, Discord, Matrix etc.
+          * **vadorovsky** @ Github, Discord, Matrix etc.
           * Software Engineer @ Deepfence Inc
           * Rustacean with Go, C and Python background
           ---
           ## What is eBPF?
-          TECHNOLOGY OF THE FUTURE WHICH WILL REPLACE IPTABLES ANY DAY
+          THE FUTURE OF LINUX NETWORKING
+
+          IT WILL REPLACE IPTABLES/NETFILTER ONE DAY
           <br />
           <img src="/images/girl_explaining.jpg" height="400" />
           ---
           ## What is eBPF?
           * **extended Berkeley Packet Filter**
           * A virtual machine with its own instruction set which runs sandboxed programs.
-          * Not Turing complete.
           * Originated in the Linux kernel.
           ---
           ## Event-driven
@@ -53,21 +54,26 @@
           ---
           ## And many many more...
           ---
-          <img src="/images/ebpf.png" height="600" />
+          ## eBPF project layout
+          * **eBPF programs**: running in the kernel and reacting to events
+          * **userspace program**: loading eBPF programs to the kernel, interacting with them
           ---
           ## BPF maps
           * Storage for sharing data between eBPF programs (in kernel) and userspace.
           * Different types:
             * hash maps
             * arrays
-            * perf buffers
+            * ring / perf buffers
           ---
           <img src="/images/bpf_map.png" height="400" />
+          ---
+          <img src="/images/perf-buffer.svg" />
           ---
           ## Examples of eBPF projects
           * **Cilium** - Kubernetes networking, service mesh
           * **Tracee** - application tracing tool
           * **Falco** - security monitoring for containers
+
           (those are in Go in C)
           ---
           ## Examples of eBPF projects using Aya
@@ -75,17 +81,26 @@
           * **Parca** - continuous profiling
           * **Pulsar** - runtime observability tool for IoT
           ---
-          ## eBPF project layout
-          * **userspace program**: loading eBPF programs to the kernel
-          * **eBPF programs**: running in the kernel and reacting to events
-          ---
           ## "Official" ways to use eBPF
-          * **bpftrace**: very easy, own scripting language
-          * **libbpf**: umm... not easy at all (everything in C)
-          * **libbpf-rs**: easier (eBPF programs in C, userspace program in Rust)
-          * **bcc**: easier (eBPF programs in C, userspace in many languages)
+          * libbpf
+          * libbpfgo
+          * libbpf-rs
+          * bcc
+
+          (With all of these, eBPF code is still in C)
+          ---
+          ## Aya
+          EVERYTHING IS IN RUST, EVEN THE EBPF PROGRAMS
+          <br />
+          <img src="/images/girl_explaining.jpg" height="400" />
           ---
           ## Why Aya?
+          <img src="/images/crabby.svg" width="400" height="400" />
+          ---
+          ## Memory safety?
+          * Actually... Rust memory model doesn't matter that much in eBPF part.
+          * eBPF has access to kernel and userspace pointers, which are unsafe.
+          * Memory safety relies more on the **eBPF verifier**.
           ---
           ## C and type safety
           ```c
@@ -130,11 +145,6 @@
           ```
           It does not compile, nice.
           ---
-          ## Memory safety?
-          * Actually... Rust memory model doesn't matter that much in eBPF part.
-          * eBPF has access to kernel and userspace memory via pointers, which are unsafe.
-          * Memory safety relies more on the eBPF verifier in the kernel rather than Rust compiler.
-          ---
           ## Error handling in C
           ```c
           struct {
@@ -169,7 +179,7 @@
           ```rust
           #[fentry(name = "kernel_clone")]
           pub fn kernel_clone(ctx: FEntryContext) -> u32 {
-              match unsafe { try_kernel_clone(ctx) } {
+              match try_kernel_clone(ctx) {
                   Ok(ret) => ret,
                   Err(_) => 1,
               }
@@ -205,7 +215,7 @@
           ## Async support
           * Userspace part of projects can be asynchronous.
           * Support for Tokio and async-std.
-          * aya-template by default uses Tokio.
+          * aya-template uses Tokio by default.
           ---
           ## How to start with Aya?
           ```bash
@@ -236,11 +246,15 @@
           cargo build
           ```
           ---
-          ## Let's write a simple firewall!
+          ## What's missing?
+          * Support for CO-RE in eBPF part of Aya
+          * That will require more work in Rust compiler
+          ---
+          ## Let's see a simple firewall in action!
           ---
           ## Thank you
-          * [Documentation](https://aya-rs.github.io/book/)
-          * [Github](https://github.com/aya-rs/aya)
+          * [aya-rs.dev](https://aya-rs.dev/)
+          * [github.com/aya-rs/aya](https://github.com/aya-rs/aya)
           * [Discord](https://discord.gg/xHW2cb2N6G)
         </textarea>
       </section>
