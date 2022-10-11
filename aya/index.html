@@ -19,16 +19,9 @@
           ---
           ## About me
           * Michal Rostecki
-          * **vadorovsky** @ Github, Discord, Matrix etc.
+          * **vadorovsky** @ Github, Discord, Twitter etc.
           * Software Engineer @ Deepfence Inc
           * Rustacean with Go, C and Python background
-          ---
-          ## What is eBPF?
-          THE FUTURE OF LINUX NETWORKING
-
-          IT WILL REPLACE IPTABLES/NETFILTER ONE DAY
-          <br />
-          <img src="/images/girl_explaining.jpg" height="400" />
           ---
           ## What is eBPF?
           * **extended Berkeley Packet Filter**
@@ -77,7 +70,7 @@
           (those are in Go in C)
           ---
           ## Examples of eBPF projects using Aya
-          * **bpfd** - daemon managing eBPF programs
+          * **bpfd** - daemon managing XDP programs for network filtering
           * **Parca** - continuous profiling
           * **Pulsar** - runtime observability tool for IoT
           ---
@@ -90,9 +83,9 @@
           (With all of these, eBPF code is still in C)
           ---
           ## Aya
-          EVERYTHING IS IN RUST, EVEN THE EBPF PROGRAMS
+          Everything in Rust, even the eBPF programs!
           <br />
-          <img src="/images/girl_explaining.jpg" height="400" />
+          <img src="/images/crabby.svg" width="400" height="400" />
           ---
           ## Why Aya?
           <img src="/images/crabby.svg" width="400" height="400" />
@@ -195,8 +188,8 @@
           ```
           ---
           ## Rust toolchain is all you need
-          * No need for LLVM and clang installation...
-          * ...as long as you're on x86_64
+          * No need for installing libbpf, make, clang in your system.
+          * On non-x86_64 architectures, the only dependency needed is libLLVM.
           ---
           ## aya-log
           Logging library, based on perf buffers, production-ready.
