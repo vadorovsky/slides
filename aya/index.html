@@ -71,7 +71,6 @@
           ---
           ## Examples of eBPF projects using Aya
           * **bpfd** - daemon managing XDP programs for network filtering
-          * **Parca** - continuous profiling
           * **Pulsar** - runtime observability tool for IoT
           ---
           ## "Official" ways to use eBPF
@@ -89,6 +88,11 @@
           ---
           ## Why Aya?
           <img src="/images/crabby.svg" width="400" height="400" />
+          ---
+          ## Rust and Linux kernel
+          * There is [Rust for Linux](https://github.com/Rust-for-Linux).
+          * There is an ongoing race to rewrite parts of the kernel in eBPF as well.
+          * **Aya says: why not both?**
           ---
           ## Memory safety?
           * Actually... Rust memory model doesn't matter that much in eBPF part.
@@ -188,8 +192,8 @@
           ```
           ---
           ## Rust toolchain is all you need
-          * No need for installing libbpf, make, clang in your system.
-          * On non-x86_64 architectures, the only dependency needed is libLLVM.
+          * No need for installing libbpf, make, clang or any C libraries in
+            your system.
           ---
           ## aya-log
           Logging library, based on perf buffers, production-ready.
