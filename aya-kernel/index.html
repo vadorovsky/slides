@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aya</title>
+</head>
+
+<body>
+    <div class="reveal">
+        <div class="slides">
+            <section data-markdown>
+                <textarea data-template>
+                    ## Rust in the Kernel (via eBPF)
+                    Writing eBPF programs in Rust with Aya
+                    <img src="/images/crabby.svg" width="400" height="400" />
+                    ---
+                    ## About me
+                    * Michal Rostecki
+                    * **vadorovsky** @ Github, Discord, Mastodon etc.
+                    * Software Engineer @ Deepfence Inc
+                    * Rustacean with Go, C and Python background
+                    ---
+                    ## Aya
+                    * eBPF programs in pure Rust.
+                    * Rust toolchain is the only dependency.
+                    * Async support for the user-space part.
+                    * Focus on developer experience.
+                    ---
+                    ## What's missing?
+                    * Emitting BTF debug info (including maps) - currently being worked on.
+                    * BTF relocations are supported by the loader, but not the compiler - long-term future plan.
+                    ---
+                    ## BTF maps
+                    ---
+                    ## In C
+                    ```c
+                    struct {
+                    	__uint(type, BPF_MAP_TYPE_HASH);
+                    	__type(key, unsigned int);
+                    	__type(value, unsigned int);
+                    	__uint(max_entries, 1024);
+                    } pid_map SEC(".maps");
+                    ```
+                    ---
+                    ## Which gets transformed to
+                    ```c
+                    struct {
+                        int (*type)[BPF_MAP_TYPE_HASH];
+                        typeof(unsigned int) *key;
+                        typeof(unsigned int) *value;
+                        int (*max_entries)[1024];
+                    } pid_map SEC(".maps");
+                    ```
+                    ---
+                    ## In Rust
+                    ```rust
+                    pub struct HashMap<K, V, const M: usize, const F: usize = 0> {
+                        r#type: *const [i32; BPF_MAP_TYPE_HASH as usize],
+                        key: *const K,
+                        value: *const V,
+                        max_entries: *const [i32; M],
+                        map_flags: *const [i32; F],
+                    }
+                    ```
+                    ---
+                    ## Usage
+                    ```rust
+                    use aya_btf_map::{macros::btf_map, HashMap};
+
+                    #[btf_map]
+                    static mut PID_MAP: HashMap<i32, i32, 1024> = HashMap::new();
+                    ```
+                    ---
+                    ```rust
+                    fn try_fork(ctx: TracePointContext) -> Result<u32, c_long> {
+                        const PARENT_PID_OFFSET: usize = 24;
+                        const CHILD_PID_OFFSET: usize = 44;
+                        let parent_pid: i32 = unsafe {
+                            ctx.read_at(PARENT_PID_OFFSET)? };
+                        let child_pid: i32 = unsafe {
+                            ctx.read_at(CHILD_PID_OFFSET)? };
+
+                        unsafe { PID_MAP.insert(&parent_pid, &child_pid, 0)? };
+
+                        Ok(0)
+                    }
+                    ```
+                    ---
+                    ## User-space code doesn't change!
+                    ---
+                    ## Problems
+                    * Kernel expects:
+                      * BTF maps as anonymous structs.
+                      * Anonymous pointer types.
+                      * Only C types, Rust supports more complex types (e.g.
+                        data carrying enums).
+                    ---
+                    ## Debug info (from C)
+                    ```
+                    !19 = !DIDerivedType(tag: DW_TAG_pointer_type,
+                        baseType: !20, size: 64)
+                    ```
+                    ```
+                    !38 = distinct !DICompositeType(tag: DW_TAG_structure_type,
+                        file: !3, line: 6, size: 256, elements: !39)
+                    ```
+                    ---
+                    ## Debug info (from Rust)
+                    ```
+                    !8 = !DIDerivedType(tag: DW_TAG_pointer_type,
+                        name: "*const [i32; 1]", baseType: !9, size: 64,
+                        align: 64, dwarfAddressSpace: 0)
+                    ```
+                    ```
+                    !4 = !DICompositeType(tag: DW_TAG_structure_type,
+                        name: "_ty_PID_MAP", scope: !2, file: !5, size: 320,
+                        align: 64, elements: !6, templateParams: !27,
+                        identifier: "9622a717fe95ebf2fc2a9847a6ff0bef")
+                    ```
+                    ---
+                    ## BTF (from C)
+                    ```
+                    [9] STRUCT '(anon)' size=32 vlen=4
+                            'type' type_id=1 bits_offset=0
+                            'key' type_id=5 bits_offset=64
+                            'value' type_id=5 bits_offset=128
+                            'max_entries' type_id=7 bits_offset=192
+                    ```
+                    ```
+                    [5] PTR '(anon)' type_id=6
+                    ```
+                    TODO: highlight anon
+                    ---
+                    ## BTF (from Rust)
+                    ```
+                    [11] STRUCT '_ty_PID_MAP' size=40 vlen=5
+                            'type' type_id=1 bits_offset=0
+                            'key' type_id=5 bits_offset=64
+                            'value' type_id=5 bits_offset=128
+                            'max_entries' type_id=7 bits_offset=192
+                            'map_flags' type_id=9 bits_offset=256
+                    ```
+                    ```
+                    [5] PTR '*const u32' type_id=6
+                    ```
+                    TODO: add colors
+                    ---
+                    ## Solutions
+                    * Temporary: modify DI in bpf-linker.
+                    * Long-term: `#[btf_export]` macro in Rust.
+                    ---
+                    ## bpf-linker
+                    Transforms DI to meet kernel expectations:
+                    * Removes names from pointer types and BTF map structs.
+                    * Tweaks the DI of Rust-specific types to be C-compatible.
+                    ---
+                    ## #[btf_export]
+                    * Decoupled from `-C debuginfo`.
+                    * Generates DI, which produces correct BTF for annotated 
+                      types.
+                    * Raises a compiler error when used on BTF-incompatible
+                      type.
+                    ---
+                    ## Example
+                    TODO
+                    ---
+                    ## LLVM working items
+                    * BTF backend segfaults with some DI produced by Rust (e.g.
+                      data carrying enums).
+                    * https://reviews.llvm.org/D136637
+                    * https://reviews.llvm.org/D138415
+                    ---
+                    ## Thank you for listening!
+                    * aya-rs.dev
+                </textarea>
+            </section>
+        </div>
+    </div>
+    <script type="module" src="/main.js"></script>
+</body>
+
+</html>
