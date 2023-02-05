@@ -32,17 +32,29 @@
                     * Emitting BTF debug info (including maps) - currently being worked on.
                     * BTF relocations are supported by the loader, but not the compiler - long-term future plan.
                     ---
+                    ## Legacy BPF maps (in C)
+                    ```c
+                    struct bpf_map_def SEC("maps") flow_map = {
+                        .type = BPF_MAP_TYPE_HASH,
+                        .key_size = sizeof(unsigned int),
+                        .value_size = sizeof(),
+                        .max_entries = 1,
+                    };
+                    ```
+                    Map parameters as values.
+                    ---
                     ## BTF maps
                     ---
                     ## In C
                     ```c
                     struct {
-                    	__uint(type, BPF_MAP_TYPE_HASH);
-                    	__type(key, unsigned int);
-                    	__type(value, unsigned int);
-                    	__uint(max_entries, 1024);
+                        __uint(type, BPF_MAP_TYPE_HASH);
+                        __type(key, unsigned int);
+                        __type(value, unsigned int);
+                        __uint(max_entries, 1024);
                     } pid_map SEC(".maps");
                     ```
+                    Map parameters embedded in the struct layout.
                     ---
                     ## Which gets transformed to
                     ```c
@@ -89,6 +101,16 @@
                     ```
                     ---
                     ## User-space code doesn't change!
+                    ```rust
+                    let pid_map: HashMap<_, u32, u32> = HashMap::try_from(bpf.map_mut("PID_MAP").unwrap())?;
+                    info!("waiting 3 seconds");
+                    sleep(Duration::from_secs(3)).await;
+                    info!("the current map content:");
+                    for r in pid_map.iter() {
+                        let (k, v) = r?;
+                        info!("parent: {k}, child: {v}");
+                    }
+                    ```
                     ---
                     ## Problems
                     * Kernel expects:
