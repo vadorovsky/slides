@@ -102,10 +102,11 @@
                     ---
                     ## User-space code doesn't change!
                     ```rust
-                    let pid_map: HashMap<_, u32, u32> = HashMap::try_from(bpf.map_mut("PID_MAP").unwrap())?;
-                    info!("waiting 3 seconds");
-                    sleep(Duration::from_secs(3)).await;
-                    info!("the current map content:");
+                    use aya::maps::HashMap;
+
+                    let pid_map: HashMap<_, u32, u32> =
+                        HashMap::try_from(bpf.map_mut("PID_MAP").unwrap())?;
+                    [...]
                     for r in pid_map.iter() {
                         let (k, v) = r?;
                         info!("parent: {k}, child: {v}");
