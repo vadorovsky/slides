@@ -29,8 +29,11 @@
                     * Focus on developer experience.
                     ---
                     ## What's missing?
-                    * Emitting BTF debug info (including maps) - currently being worked on, experimental PoC working.
+                    * Emitting BTF debug info.
+                      * Currently being worked on, experimental PoC ready.
+                      * Needed for BTF maps and verifier debug logs.
                     * BTF relocations are supported by the loader, but not the compiler - long-term future plan.
+                      * Needed for CO-RE.
                     ---
                     ## Legacy BPF maps (in C)
                     ```c
@@ -188,6 +191,18 @@
                     ```
                     ```
                     [6] PTR '(anon)' type_id=7
+                    ```
+                    ---
+                    ## Debug info included
+                    ```
+                    ; let parent_pid: i32 = unsafe {
+                        ctx.read_at(PARENT_PID_OFFSET)? };
+                    9: 63 1a f4 ff 00 00 00 00 *(u32 *)(r10 - 0xc) = r1
+                    [...]
+                    ; let child_pid: i32 = unsafe {
+                        ctx.read_at(CHILD_PID_OFFSET)? };
+                    19: 63 1a f8 ff 00 00 00 00 *(u32 *)(r10 - 0x8) = r1
+                    20: bf a2 00 00 00 00 00 00 r2 = r10
                     ```
                     ---
                     ## #[btf_export]
