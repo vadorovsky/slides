@@ -205,18 +205,18 @@
                     20: bf a2 00 00 00 00 00 00 r2 = r10
                     ```
                     ---
+                    ## LLVM working items
+                    * BTF backend segfaults with some DI produced by Rust (e.g.
+                      data carrying enums).
+                    * `LLVMGetDINodeTag` function to get the tag of DI Node.
+                    * `LLVMReplaceMDNodeOperandWith` function to modify DI.
+                    ---
                     ## #[btf_export]
                     * Decoupled from `-C debuginfo`.
                     * Generates DI, which produces correct BTF for annotated 
                       types.
                     * Raises a compiler error when used on BTF-incompatible
                       type.
-                    ---
-                    ## LLVM working items
-                    * BTF backend segfaults with some DI produced by Rust (e.g.
-                      data carrying enums).
-                    * `LLVMGetDINodeTag` function to get the tag of DI Node.
-                    * `LLVMReplaceMDNodeOperandWith` function for modifying DI.
                     ---
                     ## If you want to try it out
                     * [github.com/vadorovsky/aya-btf-map](https://github.com/vadorovsky/aya-btf-map) -
