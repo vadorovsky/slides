@@ -29,7 +29,7 @@
                     * Focus on developer experience.
                     ---
                     ## What's missing?
-                    * Emitting BTF debug info (including maps) - currently being worked on.
+                    * Emitting BTF debug info (including maps) - currently being worked on, experimental PoC working.
                     * BTF relocations are supported by the loader, but not the compiler - long-term future plan.
                     ---
                     ## Legacy BPF maps (in C)
@@ -138,7 +138,7 @@
                     ```
                     ```
                     !4 = !DICompositeType(tag: DW_TAG_structure_type,
-                        name: "_ty_PID_MAP", scope: !2, file: !5, size: 320,
+                        name: "HashMap", scope: !2, file: !5, size: 320,
                         align: 64, elements: !6, templateParams: !27,
                         identifier: "9622a717fe95ebf2fc2a9847a6ff0bef")
                     ```
@@ -158,7 +158,7 @@
                     ---
                     ## BTF (from Rust)
                     ```
-                    [11] STRUCT '_ty_PID_MAP' size=40 vlen=5
+                    [11] STRUCT 'HashMap' size=40 vlen=5
                             'type' type_id=1 bits_offset=0
                             'key' type_id=5 bits_offset=64
                             'value' type_id=5 bits_offset=128
@@ -174,9 +174,22 @@
                     * Long-term: `#[btf_export]` macro in Rust.
                     ---
                     ## bpf-linker
-                    Transforms DI to meet kernel expectations:
+                    Currently working PoC. Transforms DI to meet kernel expectations:
                     * Removes names from pointer types and BTF map structs.
                     * Tweaks the DI of Rust-specific types to be C-compatible.
+                    ---
+                    ## BTF (from Rust) after modifications
+                    ```
+                    [10] STRUCT '(anon)' size=40 vlen=5
+                            'type' type_id=1 bits_offset=0
+                            'key' type_id=5 bits_offset=64
+                            'value' type_id=5 bits_offset=128
+                            'max_entries' type_id=6 bits_offset=192
+                            'map_flags' type_id=8 bits_offset=256
+                    ```
+                    ```
+                    [6] PTR '(anon)' type_id=7
+                    ```
                     ---
                     ## #[btf_export]
                     * Decoupled from `-C debuginfo`.
