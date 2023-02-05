@@ -40,7 +40,7 @@
                     struct bpf_map_def SEC("maps") flow_map = {
                         .type = BPF_MAP_TYPE_HASH,
                         .key_size = sizeof(unsigned int),
-                        .value_size = sizeof(),
+                        .value_size = sizeof(unsigned int),
                         .max_entries = 1,
                     };
                     ```
