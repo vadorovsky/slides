@@ -2,24 +2,25 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Aya</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BPF LLVM</title>
 </head>
 
 <body>
-    <div class="reveal">
-        <div class="slides">
-            <section data-markdown>
-                <textarea data-template>
+  <div class="reveal">
+    <div class="slides">
+      <section data-markdown>
+        <textarea data-template>
                     ## The BPF target in LLVM
                     <img src="/images/ebpf.png" />
                     ---
                     ## About me
                     * Michal Rostecki
                     * **vadorovsky** @ Github, Discord, Mastodon etc.
-                    * Software Engineer @ [Light Protocol](https://lightprotocol.com)
-                    * [Aya](https://aya-rs.dev) maintainer
+                    * Software Engineer @ [**Light Protocol**](https://lightprotocol.com) (ZK on Solana)
+                    * [**Aya**](https://aya-rs.dev) maintainer (BPF library for Rust)
+                    * Interests: Linux kernel, Rust, ZK cryptography
                     ---
                     ## BPF
                     * "Berkeley Packet Filter"
@@ -36,6 +37,7 @@
                       * Security policies
                     * **Solana**
                       * Smart contracts
+                    * [**IoT / microcontrollers**](https://ieeexplore.ieee.org/abstract/document/9293081)
                     ---
                     ## Projects
                     * **Cilium** - Container Network Interface for Kubernetes.
@@ -49,6 +51,18 @@
                     * First and main compiler providing BPF support.
                     * BPF has a backend in LLVM.
                     * Supported by Clang (C) and Rust.
+                    ---
+                    ## Enabling BPF backend
+                    ```
+                    -DLLVM_TARGETS_TO_BUILD="host;BPF"
+                    ```
+                    e.g.
+                    ```
+                    CC=clang CXX=clang++ cmake -DCMAKE_BUILD_TYPE=Debug \
+                      -DLLVM_PARALLEL_LINK_JOBS=1 -DLLVM_BUILD_LLVM_DYLIB=1 \
+                      -DLLVM_ENABLE_LLD=1 -DLLVM_ENABLE_PROJECTS="clang" \
+                      -DLLVM_TARGETS_TO_BUILD="host;BPF"
+                    ```
                     ---
                     ## Registers
                     * **R0** - return value from functions, exit values for programs.
@@ -91,6 +105,120 @@
                     ---
                     ## Atomic operations
                     ---
+                    ## Example (C code)
+                    ```c
+                    #include <linux/bpf.h>
+                    #include <bpf/bpf_helpers.h>
+
+                    SEC("xdp")
+                    int  xdp_prog_simple(struct xdp_md *ctx)
+                    {
+                    	return XDP_PASS;
+                    }
+
+                    char _license[] SEC("license") = "GPL";
+                    ```
+                    ---
+                    ## Building (clang)
+                    ```
+                    clang -O2 -target bpf -c -g xdp.c -o xdp.o
+                    ```
+                    ---
+                    ## llvm-readelf
+                    ```
+                    $ llvm-readelf -S xdp.o
+                    // TODO
+                    ```
+                    ---
+                    ## llvm-objdump
+                    ```
+                    $ llvm-objdump -S xdp.o
+                    // TODO
+                    ```
+                    ---
+                    ## Emitting IR
+                    ```
+                    clang -O2 -target bpf -c -g xdp.c -S -emit-llvm -o xdp.ll
+                    ```
+                    ---
+                    ## IR
+                    ```
+                    // TODO
+                    ```
+                    ---
+                    ## Example (Rust code)
+                    ```rust
+                    #![no_std]
+                    #![no_main]
+                                      
+                    use aya_bpf::{bindings::xdp_action, cty::c_long, macros::xdp, programs::XdpContext};
+
+                    #[xdp(name = "xdp_hello")]
+                    pub fn xdp_hello(ctx: XdpContext) -> u32 {
+                        match try_xdp_hello(ctx) {
+                            Ok(ret) => ret,
+                            Err(_) => xdp_action::XDP_ABORTED,
+                        }
+                    }
+
+                    fn try_xdp_hello(ctx: XdpContext) -> Result<u32, c_long> {
+                        Ok(xdp_action::XDP_PASS)
+                    }
+                    ```
+                    ---
+                    ## Building (Rust)
+                    ```
+                    cargo +nightly build --target=bpfel-unknown-none \
+                      -Z build-std=core
+                    ```
+                    ---
+                    ## llvm-readelf
+                    ```
+                    $ llvm-readelf -S target/bpfel-unknown-none/debug/xdp-hello
+                    // TODO
+                    ```
+                    ---
+                    ## llvm-objdump
+                    ```
+                    $ llvm-objdump -S target/bpfel-unknown-none/debug/xdp-hello
+                    [...]
+                    Disassembly of section xdp/xdp_hello:
+
+                    0000000000000000 <xdp_hello>:
+                           0:   bf 16 00 00 00 00 00 00 r6 = r1
+                           1:   b7 07 00 00 00 00 00 00 r7 = 0
+                           2:   63 7a fc ff 00 00 00 00 *(u32 *)(r10 - 4) = r7
+                           3:   bf a2 00 00 00 00 00 00 r2 = r10
+                    :
+                         245:   18 03 00 00 ff ff ff ff 00 00 00 00 00 00 00 00 r3 = 4294967295 ll
+                         247:   bf 04 00 00 00 00 00 00 r4 = r0
+                         248:   b7 05 00 00 aa 00 00 00 r5 = 170
+                         249:   85 00 00 00 19 00 00 00 call 25
+                    ```
+                    ---
+                    ## Emitting IR
+                    ```
+                    cargo +nightly rustc -- --target=bpfel-unknown-none \
+                      -Z build-std=core --emit=llvm-ir
+                    ```
+                    ---
+                    ## IR
+                    ```
+                    // TODO
+                    ```
+                    ---
+                    ## Linking
+                    * BPF target is **not** supported by lld.
+                    * Instead, BPF has its own linkers:
+                      * **bpftool-link** - creted by libbpf community
+                      * **bpf-linker** - for Rust, created by Aya community
+                    * Only static linking.
+                    ---
+                    ## lld
+                    * There is a patch for lld to support BPF target, but it's
+                      not accepted.
+                      * https://reviews.llvm.org/D101336
+                    ---
                     ## Verifier
                     * (So far) only in Linux kernel (Solana, rBPF and other user space
                       implementations don't have it).
@@ -98,6 +226,9 @@
                     * DAG check preventing unbound loops.
                     * Descending all possible instruction paths, observing the
                       change of registers and stack.
+                    ---
+                    ## How verifier works
+                    * TODO
                     ---
                     ## Verifier errors
                     * `unreachable insn`
@@ -272,16 +403,20 @@
                       example project using it.
                     * Requires LLVM and bpf-linker patches.
                     ---
+                    ## Demo
+                    Let's write a simple LSM program which restricts filesystem
+                    access!
+                    ---
                     ## Thank you
                     * [aya-rs.dev](https://aya-rs.dev/)
                       * [github.com/aya-rs/aya](https://github.com/aya-rs/aya)
                       * [Discord](https://discord.gg/xHW2cb2N6G)
                     * [lightprotocol.com](https://lightprotocol.com/)
                 </textarea>
-            </section>
-        </div>
+      </section>
     </div>
-    <script type="module" src="/main.js"></script>
+  </div>
+  <script type="module" src="/main.js"></script>
 </body>
 
 </html>
