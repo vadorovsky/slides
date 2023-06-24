@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Poseidon</title>
+</head>
+
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <section data-markdown>
+        <textarea data-template>
+          # Poseidon
+
+          Zero-knowledge friendly hash function
+          ---
+          ## Why is it needed?
+
+          * In private transactions, we:
+            * Sign a hash *h = H(k, m)*, where *k* is a secret.
+            * Add *h* to the Merkle tree.
+            * Then we have to prove that:
+              * *h ∈ T*
+              * *h = H(k, m)*
+          * Doing that with traditional hashing functions is very expensive.
+          ---
+          ## Other problems
+
+          * Traditional hashing functions are often optimized for specific CPU
+            architectures. ZK projects often use virtual architectures (e.g.
+            zkEVM, WASM).
+          ---
+          ## What do we need?
+
+          * Work natively with *GF(p)* (prime field) objects.
+          * Consideration of circuit properties.
+            * Degrees.
+            * Size of circuit.
+          ---
+          ## State
+
+          An array of the given width which initially consists of the
+          following prime field elements:
+          * Domain tag - used for differentiating between multiple hasher
+            instances in the same program. By default, 0.
+          * Inputs to be hashed.
+          * Optional padding.
+          ---
+          ## State
+          * Width has 1 more element than inputs (including padding).
+          * If we declare width as *w*, number of inputs (w/o padding) as *n*,
+          and number of padding elements as *m*, then:
+            * *w = 1 + n + m*
+          ---
+          ## State
+
+          | 0          | 1       | ... | 1 + n - 1 | 1 + n     | ... | 1 + n + m |
+          |------------|---------|-----|-----------|-----------|-----|-----------|
+          | Domain tag | Input 0 | ... | Input n   | Padding 0 | ... | Padding m |
+          ---
+          ## Domain tag
+          * By default, 0.
+          * Can be set to a different value if we want to differentiate between
+            multiple hasher instances in the same program.
+          ---
+          ## Poseidon hasher with state
+
+          ```rust
+          use ark_ff::PrimeField;
+
+          pub struct Poseidon<F: PrimeField> {
+              params: PoseidonParameters<F>, // we will get to them later
+              domain_tag: F,
+              state: Vec<F>,
+          }
+          ```
+          ---
+          ## Initialization (of hasher)
+
+          ```rust
+          pub fn new(params: PoseidonParameters<F>, domain_tag: Option<F>) -> Self {
+              let domain_tag = domain_tag.unwrap_or_else(F::zero);
+              let width = params.width;
+              Self {
+                  domain_tag,
+                  params,
+                  state: Vec::with_capacity(width),
+              }
+          }
+          ```
+          ---
+          ## Initial state (when starting a single hashing operation)
+          ```rust
+          fn hash(&mut self, inputs: &[F]) -> F {
+              assert!(inputs.len() == self.params.width - 1);
+    
+              self.state.push(self.domain_tag);
+              for input in inputs {
+                  self.state.push(*input);
+              }
+
+              [...]
+          }
+          ```
+          ---
+          ## Add Round Constants
+
+          * Denoted by *ARC*.
+          * In each round, constants which are added to all elements of the state:
+            * *state = state ⊕ ARC*
+          ---
+          ## Add Round Constants
+
+          ```rust
+          pub struct PoseidonParameters<F: PrimeField> {
+              pub ark: Vec<F>, // size: rounds * width
+              [...]
+          }
+
+          fn apply_ark(&mut self, round: usize) {
+              self.state.iter_mut().enumerate().for_each(|(i, a)| {
+                  let c = self.params.ark[round * self.params.width + i];
+                  *a += c;
+              });
+          }
+          ```
+          ---
+          ## MDS matrix
+
+          * Multi-dimensional matrix.
+          * In each round, the state is multiplied by the MDS matrix.
+            * *state = state × MDS*
+          ---
+          ## MDS matrix
+
+          ```rust
+          pub struct PoseidonParameters<F: PrimeField> {
+              [...]
+              pub mds: Vec<Vec<F>>,
+              [...]
+          }
+
+          fn apply_mds(&mut self) {
+              self.state = self
+                  .state
+                  .iter()
+                  .enumerate()
+                  .map(|(i, _)| {
+                      self.state
+                          .iter()
+                          .enumerate()
+                          .fold(F::zero(), |acc, (j, a)| acc + *a * self.params.mds[i][j])
+                  })
+                  .collect();
+          }
+          ```
+          ---
+          ## S-box
+
+          α-power S-box:
+          * *S-box(x) = x^α*
+            * *α ≥ 3*
+            * *gcd(α, p − 1) = 1*
+          * Circom uses α = 5.
+          ---
+          ## Full vs partial S-box
+          * Full S-box is applied to all elements of the state.
+          * Partial S-box is applied to the first element of the state.
+          ---
+          ## Full S-box
+
+          ```rust
+          fn apply_sbox_full(&mut self) {
+              self.state.iter_mut().for_each(|a| {
+                  *a = a.pow([self.params.alpha]);
+              });
+          }
+          ```
+          ---
+          ## Partial S-box
+
+          ```rust
+          fn apply_sbox_partial(&mut self) {
+              self.state[0] = self.state[0].pow([self.params.alpha]);
+          }
+          ```
+          ---
+          ## Poseidon full round
+
+          * Applying *ARC*.
+          * Applying full *S-box*.
+          * Applying *MDS*.
+          ---
+          ## Poseidon full round
+
+          * *state = state ⊕ ARC*
+          * *state = S-box(state)*
+          * *state = state × MDS*
+          ---
+          ## Poseidon full round
+
+          ```rust
+          fn full_round(&mut self, round: usize) {
+              self.apply_ark(round);
+              self.apply_sbox_full();
+              self.apply_mds();
+          }
+          ```
+          ---
+          ## Poseidon partial round
+
+          * Applying *ARC*.
+          * Applying partial *S-box*.
+          * Applying *MDS*.
+          ---
+          ## Poseidon partial round
+
+          * *state = state ⊕ ARC*
+          * *state[0] = S-box-partial(state[0])*
+          * *state = state × MDS*
+          ---
+          ## Poseidon partial round
+
+          ```rust
+          fn partial_round(&mut self, round: usize) {
+              self.apply_ark(round);
+              self.apply_sbox_partial();
+              self.apply_mds();
+          }
+          ```
+          ---
+          ## Poseidon permutation
+
+          <img src="/images/hades.png" />
+          ---
+          ## Poseidon hash
+
+          * Numbers of rounds:
+            * *F* full rounds.
+            * *P* partial rounds.
+          * Algorithm:
+            * *F/2* full rounds.
+            * *P* partial rounds.
+            * *F/2* full rounds.
+            * Return the 1st element of the state.
+          ---
+          ## Poseidon hash 
+
+          ```
+          for r ∈ [0, F/2):
+              state = state ⊕ ARC
+              state = S-box(state)
+              state = state × MDS
+          for r ∈ [F/2, F/2 + P):
+              state = state ⊕ ARC
+              state[0] = S-box-partial(state[0])
+              state = state × MDS
+          for r ∈ [F/2 + P, F):
+              state = state ⊕ ARC
+              state = S-box(state)
+              state = state × MDS
+          return state[0]
+          ```
+          ---
+          ## Poseidon hash
+
+          ```rust
+          let all_rounds = self.params.full_rounds + self.params.partial_rounds;
+          let half_rounds = self.params.full_rounds / 2;
+  
+          for round in 0..half_rounds {
+              self.full_round(round);
+          }
+          for round in half_rounds..half_rounds + self.params.partial_rounds {
+              self.partial_round(round);
+          }
+          for round in half_rounds + self.params.partial_rounds..all_rounds {
+              self.full_round(round);
+          }
+
+          return self.state[0];
+          ```
+          ---
+          # Sources
+          * [Filecoin Spec: Poseidon](https://spec.filecoin.io/algorithms/crypto/poseidon/)
+          * [Poseidon whitepaper](https://eprint.iacr.org/2019/458.pdf)
+        </textarea>
+      </section>
+    </div>
+  </div>
+  <script type="module" src="/main.js"></script>
+</body>
+
+</html>
