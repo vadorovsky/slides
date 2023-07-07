@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Light Protocol - Shield</title>
+</head>
+
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <section data-markdown>
+        <textarea data-template>
+          # Shield transactions
+          ---
+          ## Account (in Light Protocol)
+          * Shielded keypair
+          * Encryption keypair
+          * Poseidon EdDSA keypair
+          ---
+          ## Shielded keypair
+          * *shielded_private_key = Blake2(seed + "shieled")*
+          * *shielded_public_key = Poseidon(private_key)*
+          ---
+          ## UTXO
+          * Assets
+            * Array of token addresses.
+            * 1st one SOL (system program), then *n* SPL token addresses.
+          * Amounts
+            * An array of amounts per asset.
+          * Blinding
+            * *Poseidon(random_bytes, shielded_private_key)*
+          * (Light Protocol) Account
+          * Application data (optional)
+          ---
+          ## On-chain verifiers
+          | ID      | Inputs | Outputs | Solana transactions | App support |
+          |---------|--------|---------|---------------------|-------------|
+          | Zero    | 2      | 2       | 1                   | no          |
+          | One     | 10     | 2       | 2                   | no          |
+          | Two     | 4      | 4       | 2                   | yes         |
+          | Storage | 2      | 2       | 2                   | no          |
+          ---
+          ## Transaction
+          ---
+          ## Shield
+          Let's assume we want to shield:
+          * 1 SOL (1,000,000,000 lamports)
+          * 10 USDC
+          We will use verifier zero.
+          ---
+          ## Input UTXOs
+          | Parameter  | UTXO 0 | UTXO 1 |
+          |------------|--------|--------|
+          | Amount SOL | 0      | 0      |
+          | Amount SPL | 0      | 0      |
+          ---
+          ## Output UTXOs
+          | Parameter           | UTXO 0                                         | UTXO 1         |
+          |---------------------|------------------------------------------------|----------------|
+          | Amount SOL          | 1_000_000_000                                  | 0              |
+          | Amount SPL          | 10                                             | 0              |
+          | Asset SPL           | USDC                                           | -              |
+          | Account             | Our LP account                                 | -              |
+          | Blinding            | *Poseidon(random_bytes, shielded_private_key)* | *random_bytes* |
+          | Shielded public key | *shielded_public_key*                          | random         |
+          ---
+          ## Merging UTXOs
+          By defeault, each shield transaction (to self) merges existing UTXOs.
+
+          It's done with **transfer** transaction, which will be explained on the next sessions.
+        </textarea>
+      </section>
+    </div>
+  </div>
+  <script type="module" src="/main.js"></script>
+</body>
+
+</html>
